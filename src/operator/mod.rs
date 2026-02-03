@@ -203,42 +203,70 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
                     Ok(Value::Empty)
                 }
             },
-            Add => {
+            Add | Sub => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                expect_number_or_string(&arguments[0])?;
-                expect_number_or_string(&arguments[1])?;
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
-                    let mut result = String::with_capacity(a.len() + b.len());
-                    result.push_str(&a);
-                    result.push_str(&b);
-                    Ok(Value::String(result))
-                } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                    a.checked_add(&b).map(Value::Int)
-                } else if let (Ok(a), Ok(b)) = (arguments[0].as_number(), arguments[1].as_number())
-                {
-                    Ok(Value::Float(a + b))
-                } else {
-                    Err(EvalexprError::wrong_type_combination(
-                        self.clone(),
-                        vec![
-                            arguments.get(0).unwrap().into(),
-                            arguments.get(1).unwrap().into(),
-                        ],
-                    ))
-                }
-            },
-            Sub => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                arguments[0].as_number()?;
-                arguments[1].as_number()?;
+                if let (Ok(a), Ok(b)) = (arguments[0].as_tuple(), arguments[1].as_tuple()) {
+                    if a.len() == b.len() {
+                        let mut result = Vec::with_capacity(a.len());
+                        for (a, b) in a.into_iter().zip(b) {
+                            result.push(self.eval(&[a, b], context)?);
+                        }
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                    a.checked_sub(&b).map(Value::Int)
+                        Ok(Value::Tuple(result))
+                    } else {
+                        Err(EvalexprError::expected_same_len_tuples(
+                            arguments[0].clone(),
+                            arguments[1].clone(),
+                        ))
+                    }
                 } else {
-                    Ok(Value::Float(
-                        arguments[0].as_number()? - arguments[1].as_number()?,
-                    ))
+                    match self {
+                        Add => {
+                            expect_operator_argument_amount(arguments.len(), 2)?;
+                            expect_number_or_string(&arguments[0])?;
+                            expect_number_or_string(&arguments[1])?;
+
+                            if let (Ok(a), Ok(b)) =
+                                (arguments[0].as_string(), arguments[1].as_string())
+                            {
+                                let mut result = String::with_capacity(a.len() + b.len());
+                                result.push_str(&a);
+                                result.push_str(&b);
+                                Ok(Value::String(result))
+                            } else if let (Ok(a), Ok(b)) =
+                                (arguments[0].as_int(), arguments[1].as_int())
+                            {
+                                a.checked_add(&b).map(Value::Int)
+                            } else if let (Ok(a), Ok(b)) =
+                                (arguments[0].as_number(), arguments[1].as_number())
+                            {
+                                Ok(Value::Float(a + b))
+                            } else {
+                                Err(EvalexprError::wrong_type_combination(
+                                    self.clone(),
+                                    vec![
+                                        arguments.get(0).unwrap().into(),
+                                        arguments.get(1).unwrap().into(),
+                                    ],
+                                ))
+                            }
+                        },
+                        Sub => {
+                            expect_operator_argument_amount(arguments.len(), 2)?;
+                            arguments[0].as_number()?;
+                            arguments[1].as_number()?;
+
+                            if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
+                                a.checked_sub(&b).map(Value::Int)
+                            } else {
+                                Ok(Value::Float(
+                                    arguments[0].as_number()? - arguments[1].as_number()?,
+                                ))
+                            }
+                        },
+                        _ => unreachable!(),
+                    }
                 }
             },
             Neg => {
