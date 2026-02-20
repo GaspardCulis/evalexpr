@@ -1550,6 +1550,14 @@ fn test_tuple_definitions() {
 #[test]
 fn test_tuple_operations() {
     assert_eq!(
+        eval("!(false, true, true)"),
+        Ok(Value::Tuple(vec![
+            Value::Boolean(true),
+            Value::Boolean(false),
+            Value::Boolean(false),
+        ]))
+    );
+    assert_eq!(
         eval("(1, 2, 3) + (4, 5, 6)"),
         Ok(Value::Tuple(vec![
             Value::from_int(5),
