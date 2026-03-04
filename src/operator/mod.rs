@@ -198,10 +198,7 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
 
         // Check if we can do piecewise operations on tuples
         match self {
-            FunctionIdentifier { identifier: _ } => {
-                // Don't wrap function tuple operations
-            },
-            _ => match arguments {
+            Add | Sub | Neg | Mul | Div | And | Or | Not => match arguments {
                 [Value::Tuple(a_elements), Value::Tuple(b_elements)] => {
                     if a_elements.len() != b_elements.len() {
                         return Err(EvalexprError::expected_same_len_tuples(
@@ -226,6 +223,7 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
                 },
                 _ => {},
             },
+            _ => {},
         }
 
         match self {
