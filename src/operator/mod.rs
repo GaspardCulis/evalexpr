@@ -208,7 +208,7 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
                     }
 
                     let mut computed = Vec::with_capacity(a_elements.len());
-                    for (a, b) in a_elements.into_iter().zip(b_elements) {
+                    for (a, b) in a_elements.iter().zip(b_elements) {
                         computed.push(self.eval(&[a.clone(), b.clone()], context)?);
                     }
 
@@ -217,7 +217,7 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
                 [Value::Tuple(elements)] => {
                     let mut computed = Vec::with_capacity(elements.len());
                     for element in elements {
-                        computed.push(self.eval(&[element.clone()], context)?);
+                        computed.push(self.eval(std::slice::from_ref(element), context)?);
                     }
                     return Ok(Value::Tuple(computed));
                 },
